@@ -1,6 +1,8 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+// For testing
+
 class Users_api extends CI_Controller {
 
 	function __construct()
