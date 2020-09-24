@@ -425,8 +425,6 @@ class Crud_model extends CI_Model {
 
 	function create_movie(){
 		$data['title']				=	($this->input->post('title')) ? $this->input->post('title') : "";
-		$data['banner']				=	($this->input->post('banner')) ? $this->input->post('banner') : "";
-		$data['type']				=	"movie";
 		$data['description_short']	=	($this->input->post('description_short')) ? $this->input->post('description_short') : "";
 		$data['description_long']	=	($this->input->post('description_long')) ? $this->input->post('description_long') : "";
 		$data['year']				=	($this->input->post('year')) ? $this->input->post('year') : "";
@@ -455,7 +453,7 @@ class Crud_model extends CI_Model {
 		{
 			array_push($actor_entries, $actors[$i]);
 		}
-		$data['actors']				=	implode(",", $actor_entries);
+		$data['actors']				=	json_encode($actor_entries);
 
 		$categories					=	$this->input->post('categories');
 		$category_entries			=	array();
@@ -463,7 +461,7 @@ class Crud_model extends CI_Model {
 		for ($j = 0; $j < $number_of_entries ; $j++){
 			array_push($category_entries, $categories[$j]);
 		}
-		$data['categories']			=	implode(",", $category_entries);
+		$data['categories']			=	json_encode($category_entries);
 
 		$this->db->insert('movie', $data);
 		$video_id = $this->db->insert_id();
@@ -494,8 +492,6 @@ class Crud_model extends CI_Model {
 	function update_movie($video_id = ''){
 
 		$data['title']				=	($this->input->post('title')) ? $this->input->post('title') : "";
-		$data['banner']				=	($this->input->post('banner')) ? $this->input->post('banner') : "";
-		$data['type']				=	"movie";
 		$data['description_short']	=	($this->input->post('description_short')) ? $this->input->post('description_short') : "";
 		$data['description_long']	=	($this->input->post('description_long')) ? $this->input->post('description_long') : "";
 		$data['year']				=	($this->input->post('year')) ? $this->input->post('year') : "";
@@ -520,16 +516,7 @@ class Crud_model extends CI_Model {
 		{
 			array_push($actor_entries, $actors[$i]);
 		}
-
-		$data['actors']				=	implode(",",$actor_entries);
-
-		$categories					=	$this->input->post('categories');
-		$category_entries			=	array();
-		$number_of_entries			=	sizeof($categories);
-		for ($j = 0; $j < $number_of_entries ; $j++){
-			array_push($category_entries, $categories[$j]);
-		}
-		$data['categories']			=	implode(",", $category_entries);
+		$data['actors']				=	json_encode($actor_entries);
 
 		$this->db->update('movie', $data, array('video_id'=>$video_id));
 
@@ -575,7 +562,6 @@ class Crud_model extends CI_Model {
 	function create_series(){
 
 		$data['title']				=	($this->input->post('title')) ? $this->input->post('title') : "";
-		$data['type']				=	$this->input->post('type');
 		$data['trailer_url']		=	($this->input->post('series_trailer_url')) ? $this->input->post('series_trailer_url') : "";
 		$data['description_short']	=	($this->input->post('description_short')) ? $this->input->post('description_short') : "";
 		$data['description_long']	=	($this->input->post('description_long')) ? $this->input->post('description_long') : "";
@@ -612,7 +598,6 @@ class Crud_model extends CI_Model {
 	function update_series($series_id = '')
 	{
 		$data['title']				=	($this->input->post('title')) ? $this->input->post('title') : "";
-		$data['type']				=	$this->input->post('type');
 		$data['trailer_url']		=	($this->input->post('series_trailer_url')) ? $this->input->post('series_trailer_url') : "";
 		$data['description_short']	=	($this->input->post('description_short')) ? $this->input->post('description_short') : "";
 		$data['description_long']	=	($this->input->post('description_long')) ? $this->input->post('description_long') : "";
@@ -657,7 +642,7 @@ class Crud_model extends CI_Model {
 	function get_seasons_of_series($series_id = '')
 	{
 		$this->db->order_by('season_id', 'desc');
-        $this->db->where('video_id', $series_id);
+        $this->db->where('series_id', $series_id);
         $query = $this->db->get('season');
         return $query->result_array();
 	}
@@ -807,7 +792,6 @@ class Crud_model extends CI_Model {
 
 	function get_poster_url($type = '' , $id = '')
 	{
-	    
         if (file_exists('assets/global/'.$type.'_poster/' . $id . '.jpg'))
             $image_url = base_url() . 'assets/global/'.$type.'_poster/' . $id . '.jpg';
         else

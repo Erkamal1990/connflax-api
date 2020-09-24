@@ -82,10 +82,10 @@ public function signUp(){
 											$user_id = $this->db->insert_id();
 											$result = $this->crud_model->validate_user($user_id);
 
-									$this->db->where('referral_code',$post['referral_code']);
+											$this->db->where('referral_code',$post['referral_code']);
 									    $checkCode = $this->db->get_where("user")->row_array();
 									  if(!empty($checkCode)){
-										$insertCpde = array(
+												$insertCpde = array(
 						      			'user_id' =>$user_id ,
 						      			'code' =>$post['referral_code'],
 						      			 );
@@ -152,7 +152,6 @@ public function signUp(){
 public function verifyOtp(){
 		$post = $this->input->post();
 			if(isset($post['otp']) && $post['otp'] != ""){
-				if(isset($post['fcm_id']) && $post['fcm_id'] != ""){
 
 				$this->db->where("otp_code", $post['otp']);
 				$this->db->where("is_verified", 1);
@@ -190,11 +189,6 @@ public function verifyOtp(){
 						$response['success'] = 0;
 						$response['message'] = "Incorrect or expired OTP code.";
 					}
-				}
-				else{
-					$response['success'] = 0;
-					$response['message'] = "Otp code can not be blank.";
-				}
 			}
 			else{
 				$response['success'] = 0;
@@ -316,6 +310,7 @@ public function profileUpdate(){
 
 									$user['profile_pic'] = $imageName;
 								}
+
 								$this->db->where("user_id", $post['user_id']);
 								$update = $this->db->update("user", $user);
 								if($update){
@@ -362,27 +357,21 @@ public function login(){
 			if(isset($post['mobile']) && $post['mobile'] != ""){
 				if(isset($post['password']) && $post['password'] != ""){
 					if(isset($post['country_code']) && $post['country_code'] != ""){
-						if(isset($post['fcm_id']) && $post['fcm_id'] != ""){
 
-							$checkUser = $this->db->get_where("user", array("mobile" => $post['mobile'], "password" => sha1($post['password']),"status"=> 1))->row_array();
-							if(!empty($checkUser)){
+						$checkUser = $this->db->get_where("user", array("mobile" => $post['mobile'], "password" => sha1($post['password']),"status"=> 1))->row_array();
+						if(!empty($checkUser)){
 
-								$user = $this->common_model->getSingleUserById($checkUser['user_id']);
-								$this->common_model->updateDeviceId($checkUser['user_id'],$post['device_id']);
+							$user = $this->common_model->getSingleUserById($checkUser['user_id']);
+							$this->common_model->updateDeviceId($checkUser['user_id'],$post['device_id']);
 
-								$response['success'] = 1;
-								$response['message'] = "You have logged in successfully.";
-								$response['user']    = $user;
+							$response['success'] = 1;
+							$response['message'] = "You have logged in successfully.";
+							$response['user']    = $user;
 
-							}
-							else{
-								$response['success'] = 0;
-								$response['message'] = "Incorrect mobile or password. Please try again.";
-							}
 						}
 						else{
 							$response['success'] = 0;
-							$response['message'] = "fcm id can not be blank.";	
+							$response['message'] = "Incorrect mobile or password. Please try again.";
 						}
 					}
 					else{
@@ -514,6 +503,7 @@ public function password(){
 		}
 		echo json_encode($response);
 	}
+
 public function socialLogin(){
 
 		/** Login type **/
@@ -529,71 +519,64 @@ public function socialLogin(){
 				if(isset($post['first_name']) && $post['first_name'] != ""){
 					if(isset($post['login_type']) && $post['login_type'] != ""){
 						if(isset($post['social_media_id']) && $post['social_media_id'] != ""){
-							if(isset($post['fcm_id']) && $post['fcm_id'] != ""){
 
-							$where = "mobile='".$post['mobile']."' or email='".$post['email']."' AND social_media_id='".$post['social_media_id']."'";
-							$this->db->where($where);
-							$checkUser = $this->db->get_where("user")->row_array();
+						$where = "mobile='".$post['mobile']."' or email='".$post['email']."' or social_media_id='".$post['social_media_id']."'";
+						$this->db->where($where);
+						$checkUser = $this->db->get_where("user")->row_array();
 
-							$chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-							$code = "";
-						      for ($i = 0; $i < 6; $i++) {
-						          $code .= $chars[mt_rand(0, strlen($chars)-1)];
-						      }
+						$chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+						$code = "";
+					      for ($i = 0; $i < 6; $i++) {
+					          $code .= $chars[mt_rand(0, strlen($chars)-1)];
+					      }
 
-								if(!empty($checkUser)){
-									if($checkUser['mobile'] == "" || $checkUser['email'] == ""){
-										
-										$data['mobile'] = $post['mobile'];
-										$data['email'] = $post['email'];
+							if(!empty($checkUser)){
+								if($checkUser['mobile'] == "" || $checkUser['email'] == ""){
+									
+									$data['mobile'] = $post['mobile'];
+									$data['email'] = $post['email'];
 
-										$this->db->where("user_id",$checkUser['user_id']);
-										$insert = $this->db->update("user",$data);
-									}
-									$user = $this->common_model->getSingleUserById($checkUser['user_id']);
-									$response['userType'] = 0;
-									$response['success'] = 1;
-									$response['message'] = "";
-									$response['user']    = $user;
+									$this->db->where("user_id",$checkUser['user_id']);
+									$insert = $this->db->update("user",$data);
 								}
-								else{
-
-									$data['first_name'] = $post['first_name'];
-									$data['last_name']  = $post['last_name'];
-									$data['email']      = $post['email'];
-									$data['mobile']     = $post['mobile'];
-									$data['login_type'] = $post['login_type'];
-									$data['device_id']  = $post['device_id'];
-									$data['social_media_id']  = $post['social_media_id'];
-									$data['fcm_id']  	= $post['fcm_id'];
-									$data['referral_code'] = 'CONN'.$code;
-									$data['profile_pic'] = ($post['profile_pic']) ? $post['profile_pic'] : "";
-									$data['status']      = 1;
-									$data['timestamp']   = time();
-
-									$insert = $this->db->insert("user", $data);
-
-									if($insert){	
-
-										$user_id = $this->db->insert_id();
-
-										$user = $this->common_model->getSingleUserById($user_id);
-
-										$response['userType'] = 1;
-										$response['success'] = 1;
-										$response['message'] = "";
-										$response['user'] = $user;
-
-									}
-									else{
-										$response['success'] = 0;
-										$response['message'] = "Opps.. Something went wrong. Please try again.";
-									}
-								}
+								$user = $this->common_model->getSingleUserById($checkUser['user_id']);
+								$response['userType'] = 0;
+								$response['success'] = 1;
+								$response['message'] = "";
+								$response['user']    = $user;
 							}
 							else{
-								$response['success'] = 0;
-								$response['message'] = "fcm id can not be blank.";
+
+								$data['first_name'] = $post['first_name'];
+								$data['last_name']  = $post['last_name'];
+								$data['email']      = $post['email'];
+								$data['mobile']     = $post['mobile'];
+								$data['login_type'] = $post['login_type'];
+								$data['device_id']  = $post['device_id'];
+								$data['social_media_id']  = $post['social_media_id'];
+								$data['referral_code'] = 'CONN'.$code;
+								$data['profile_pic'] = ($post['profile_pic']) ? $post['profile_pic'] : "";
+								$data['status']      = 1;
+								$data['timestamp']   = time();
+
+								$insert = $this->db->insert("user", $data);
+
+								if($insert){	
+
+									$user_id = $this->db->insert_id();
+
+									$user = $this->common_model->getSingleUserById($user_id);
+
+									$response['userType'] = 1;
+									$response['success'] = 1;
+									$response['message'] = "";
+									$response['user'] = $user;
+
+								}
+								else{
+									$response['success'] = 0;
+									$response['message'] = "Opps.. Something went wrong. Please try again.";
+								}
 							}
 						}
 						else{

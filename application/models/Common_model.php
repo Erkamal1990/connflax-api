@@ -56,11 +56,7 @@ class Common_model extends CI_Model
 
       $response_object = curl_exec($curl);
    }*/
-public function clean($string) {
-     $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
 
-     return preg_replace('/[^A-Za-z0-9\-.]/', '', $string); // Removes special chars.
-  }
 public function sendMessage($to, $text){
       $msg = urlencode($text);
       $url = "http://sms.hspsms.com/sendSMS?username=digitalfriend&message=".$msg."&sendername=CPOINT&smstype=TRANS&numbers=".$to."&apikey=4d7d1c87-27b8-4071-8a2d-f0e174980c12";
@@ -91,32 +87,27 @@ public function get_web_page($url) {
 
           return $content;
   }
-public function push_notification($operation, $message, $sender_id, $receiver_id, $receiver_role, $sender_role, $item_id){
+public function push_notification($user_id, $message, $operation){
       /*GCM Token Ids / Array for multiple tokens*/
       $data = array(
-         "operation" => $operation,
+         "user_id" => $user_id,
          "message" => $message,
-         "sender_id" => $sender_id,
-         "sender_role" => $sender_role,
-         "receiver_id" => $receiver_id,
-         "receiver_role" => $receiver_role,
+         "operation" => $operation,
          "is_read" => 0,
          "created_at" => date("Y-m-d h:i:s"),
-         "updated_at" => date("Y-m-d h:i:s"),
-         "item_id" => $item_id
       );
       $insert = $this->db->insert("notifications", $data);
       if($insert){
-        $user_tokens = $this->db->get_where("fcm_tokens", array("user_id" => $receiver_id))->result_array();
+        $user_tokens = $this->db->get_where("user", array("user_id" => $user_id))->result_array();
         $tokens = array_map(function($a) {
           return $a['token'];
         }, $user_tokens);
 
-        define( 'API_ACCESS_KEY', 'AAAA9i7n8oQ:APA91bHmZPnhn6BQwUGu_Fm9tGptYA0ISIv9QP30iKVhMS4tlAxl3E3KMdsJhUCpchu3AaSQh41G-ln7IZ7yj7cN9qV9f3Cz0aD2JtlayuOhzPBcAES2mtq0sFbddwNCKh7i0Xd4LGRU' );
+        define( 'API_ACCESS_KEY', 'AAAApNg7rbI:APA91bGP4R_xWZ3oVfX16bpFptSjMXloTf0bZnmKDv_BxLcxOJAxVOkslH6nYO03_YIErqHE6USw6KoY3yCxCA4Zed8F0TV73GUSBGJ1TZQVND8gN8KlABtmVeoHVNw2MA7VWAKWsWHO' );
         /*Data object for android foreground and background / ios forground / Fields can be modified as per requirements*/
-        $msg = array('title' => "Aqualogy",'message' => $data['message'], 'operation' => $data['operation'], 'content_id'=>$data['item_id'], "notificationsentfrom" => "serverside");
+        $msg = array('title' => "Connflix",'message' => $data['message'], 'operation' => $data['operation'], "notificationsentfrom" => "serverside");
         /*Notification object for ios background / Fields except body can be modified as per requirements*/
-        $notification = array('title' => "Aqualogy",'body' =>$data['message'],"sound" =>"default");
+        $notification = array('title' => "Connflix",'body' =>$data['message'],"sound" =>"default");
         /*Notification Payload*/
         $fields = array('registration_ids'  => $tokens,'notification'=> $notification,'data'=> $msg,'content_available' => true);
         $headers = array('Authorization: key=' . API_ACCESS_KEY,'Content-Type: application/json');
@@ -178,14 +169,13 @@ public function getSingleUserById($user_id){
         $planStart = '';
         $planEnd = '';
         if(!empty($user_id)){
-          $subscrbeData = $this->db->query('select * from subscription where user_id ='.$user_id.' order by subscription_id desc limit 1')->row_array();
-          if(!empty($subscrbeData)){
+          $subscrbeData = $this->db->query('select * from subscription where user_id ='.$user_id.' AND type IS NULL order by subscription_id desc limit 1')->row_array();
+          if(!empty($subscrbeData['plan_id'])){
             $isPlan = $subscrbeData['plan_id'];
             $planStart = date("d M Y",$subscrbeData['timestamp_from']);
             $planEnd = date("d M Y",$subscrbeData['timestamp_to']);
           }
          }
-
          $result['user_id'] = $user_id;
 
          $result['first_name']    = $user['first_name'];
@@ -196,14 +186,14 @@ public function getSingleUserById($user_id){
          $result['referral_code'] = $user['referral_code'] ? $user['referral_code'] : "";
          $result['notification']  = $user['notification'] == 0?'OFF':'ON';
          $result['autoplay']      = $user['autoplay'] == 0?'OFF':'ON';
-         $result['plan_id']       = $isPlan?$isPlan:'';
+         $result['plan_id']       = $isPlan ? $isPlan : '';
          $result['start_date']    = $planStart ? $planStart : '';
          $result['end_date']      = $planEnd ? $planEnd : '';
          $result['social_media_id']  = $user['social_media_id']?$user['social_media_id']:'';
          $result['status']        = $user['status'];
          $result['login_type']    = $login_type;
          $result['my_wallet']     = $walletAmount;
-         $result['profile_pic']   = $user['profile_pic'] ? base_url().'assets/global/user_thumb/' . $user['profile_pic'] : '';
+         $result['profile_pic']   = $user['profile_pic'] ? base_url().'assets/global/user_thumb/' . $user['profile_pic'] : '';;
          return $result;
       }
       else{
@@ -225,8 +215,8 @@ public function generate_code($data){
         if($insert){
           $this->db->where('referral_code',$data['code']);
           $getUser = $this->db->get_where("user")->row_array();
-          $getsetting = $this->db->query("select * from settings where type = 'referral_amount'")->row_array();
           $user_id = $getUser['user_id'];
+          $getsetting = $this->db->query("select * from settings where type = 'referral_amount'")->row_array();
           $amount = $getsetting['description'];
           $type = 1;
           $mode = 'referral';
@@ -420,13 +410,14 @@ public function allVideoList($data){
        if($data['page'] || !empty($data['page']) || $data['limit'] || !empty($data['limit'])){
           $curpage = $data['page'];
           $limit = $data['limit'];
+         // $search  = $data['q'];
         }else{
           $curpage = 1;
+          //$search  = '';
           $limit = 30;
         }
 
         $cond = "";
-
         if($data['type']!=''){
             $cond .= ' and type="'.$data['type'].'"';
         }
@@ -438,9 +429,13 @@ public function allVideoList($data){
         if(isset($data['featured']) && $data['featured'] != ""){
             $cond .= ' and featured="'.$data['featured'].'"';
         }
+        $searchStr = '';
+        // if($search != ""){
+        //   $searchStr = " and (title like '%".$search."%' or type like '%".$search."%')";
+        // }
 
         $start  = ($curpage * $limit) - $limit;
-        $total_videos  =  $this->db->query('select video_id, title, type FROM movie where 1=1 '.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) UNION ALL select video_id, title, type FROM series where 1=1 '.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories)');
+        $total_videos  =  $this->db->query('select video_id, title, type FROM movie where 1=1 '.$searchStr.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) UNION ALL select video_id, title, type FROM series where 1=1 '.$searchStr.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories)');
         $totlerec   = $total_videos->num_rows();
         $endpage    = ceil($totlerec/$limit);
         $startpage  = 1;
@@ -449,7 +444,7 @@ public function allVideoList($data){
 
         $DisplayLimit = " limit ".$start.",".$limit;
 
-       $allvideos = $this->db->query('select video_id, title, type,categories FROM movie where 1=1 '.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) group by categories UNION ALL select video_id, title, type, categories FROM series where 1=1 '.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) group by categories'.$DisplayLimit)->result_array();
+       $allvideos = $this->db->query('select video_id, title, type,categories FROM movie where 1=1 '.$searchStr.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) group by categories UNION ALL select video_id, title, type, categories FROM series where 1=1 '.$searchStr.$cond.' and FIND_IN_SET('.$cat['category_id'].',categories) group by categories'.$DisplayLimit)->result_array();
        $query_tot = $this->db->query('SELECT FOUND_ROWS() as myCounter');
        $iFilteredTotal = $query_tot->row()->myCounter;
 
@@ -459,18 +454,16 @@ public function allVideoList($data){
           $allvideoData['list'][$catCount]['totalrecord'] = $iFilteredTotal;
         }
 
-      // $allvideoData['list'][$catCount]['videos'] = array();
+       // $allvideoData['list'][$catCount]['videos'] = array();
 
      if(!empty($allvideos)){
         $count = 0;
        foreach ($allvideos as $video) {
-
          $allvideoData['list'][$catCount]['videos'][$count]['video_id'] =  $video['video_id'];
          $allvideoData['list'][$catCount]['videos'][$count]['type'] =  $video['type']?$video['type']:'';
          $allvideoData['list'][$catCount]['videos'][$count]['title'] =  $video['title'];
          $allvideoData['list'][$catCount]['videos'][$count]['video_thumb'] = base_url().'assets/global/'.$video['type'].'_thumb/' . $video['video_id'] . '.jpg';
          $allvideoData['list'][$catCount]['videos'][$count]['video_banner'] = base_url().'assets/global/'.$video['type'].'_poster/' . $video['video_id'] . '.jpg';
-
          $count++;
        }
      }
@@ -484,7 +477,6 @@ public function allVideoList($data){
   return $allvideoData;
 
 }
-
 public function get_list_of_directories_and_files($dir = APPPATH, &$results = array()) {
     $files = scandir($dir);
     foreach($files as $key => $value){
@@ -533,7 +525,7 @@ public function get_list_of_directories_and_files($dir = APPPATH, &$results = ar
     }
     return $results;
   }
-public function walletTransaction($user_id,$amount,$type=null,$mode=null,$comment=null){
+  public function walletTransaction($user_id,$amount,$type=null,$mode=null,$comment=null){
   // $type = CR/DR
   //$mode = referral,promo bonus,add money 
   //$comment = comments 
@@ -591,7 +583,6 @@ public function getSubscription($data){
      }
      return $result;
 }
-//https://subinsb.com/trending-box-html-php-mysql/
 public function insert_search_data($video_id,$title,$type){
   $searchCheck = $this->db->get_where('popular_search',array("video_id"=>$video_id,'type'=>$type))->row_array();
     if(!empty($searchCheck)){
@@ -612,6 +603,19 @@ public function insert_search_data($video_id,$title,$type){
     }
     return $response;
 }
-
+public function insertInquiry($data){
+    $inqData  = array(
+            'name'      =>$data['name'],
+            'email'     =>$data['email'],
+            'phone'     =>$data['phone'],
+            'message'   =>$data['message'],
+         );
+    $insert = $this->db->insert('contact_us',$inqData);
+    if($insert){
+        $result['success'] = 1;
+     }else{
+        $result['success'] = 0; 
+     }
+     return $result;
 }
-//update popular_search SET hits=hits+1 WHERE video_id = 7 and type = "movie"
+}

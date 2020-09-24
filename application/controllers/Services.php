@@ -433,6 +433,7 @@ public function media_list(){
 				}
 				$response['count'] = $iFilteredTotal;
 				$response['success'] = 1;
+				$response['message'] = "";
 			}else{
 				$response['message'] = "No video found.";
 				$response['success'] = 0;
@@ -443,160 +444,7 @@ public function media_list(){
 		}
 		echo json_encode($response);
 	}
-	public function wallet_transaction(){
-		$post = $this->input->post();
-		if(isset($post['user_id']) && $post['user_id'] != ""){
-			if(isset($post['amount']) && $post['amount'] != ""){
-				if(isset($post['txn_id']) && $post['txn_id'] != ""){
-					$txnData = array(
-						'user_id'        =>$post['user_id'],
-						'amount'         =>$post['amount'],
-						'transaction_id' =>$post['txn_id'],
-						'payment_mode'   =>$post['payment_mode'],
-						'currency'       =>$post['currency'],
-						'status'         =>$post['status'],
-						'timestamp'      =>time(),
-						 );
-					$results  = $this->common_model->addTransactionDetail($txnData);
-					if($results['success'] == 1){
-						$response['message'] = "";
-					    $response['success'] = 1;
-					}else{
-						$response['message'] = "Opps.. Something went wrong.";
-					    $response['success'] = 0;
-					}
-					if($post['status'] == 'success'){
-						$type = 1;
-						$mode = 'Add Money';
-						$comment = 'Point add by you.';
-						$this->common_model->walletTransaction($post['user_id'],$post['amount'],$type,$mode,$comment);
-					}
-				}else{
-					$response['message'] = "txn_id can not blank.";
-					$response['success'] = 0;
-				}
-			}else{
-				$response['message'] = "Amount can not blank.";
-				$response['success'] = 0;
-			}
-		}else{
-				$response['message'] = "user id can not blank.";
-				$response['success'] = 0;
 
-		}
-		echo json_encode($response);
-	}
-	public function plan_list(){
-		$post = $this->input->post();
-		if($post['page'] || !empty($post['page']) || $post['limit'] || !empty($post['limit'])){
-			$curpage = $post['page'];
-			$limit = $post['limit'];
-			$search  = $post['q'];
-		}else{
-			$curpage = 1;
-			$search  = $post['q'];
-			$limit = 20;
-		}
-
-		$start      = ($curpage * $limit) - $limit;
-		$plans   	= $this->db->get('plan');
-		$totlerec   = $plans->num_rows();
-		$endpage    = ceil($totlerec/$limit);
-		$startpage  = 1;
-		$nextpage   = $curpage + 1;
-		$prevpage   = $curpage - 1;
-
-		if($search == ""){
-			$DisplayLimit = " limit ".$start.",".$limit;
-		}
-
-		$cond = "";
-
-		if($search != ""){
-			$cond .= " and (name like '%".$search."%') ";
-		}
-
-		$planData = $this->db->query("select SQL_CALC_FOUND_ROWS * from plan where 1=1 ".$cond." order by price ".$DisplayLimit)->result_array();
-			$query = $this->db->query('SELECT FOUND_ROWS() as myCounter');
-			$iFilteredTotal = $query->row()->myCounter;
-
-		$count = 0;
-		if(!empty($planData)){
-			foreach($planData as $plan){
-
-				$response['plan'][$count]['plan_id']    = $plan['plan_id'];
-				$response['plan'][$count]['name'] 		= $plan['name'];
-				$response['plan'][$count]['price'] 		= $plan['price'];
-				$response['plan'][$count]['days'] 		= $plan['days'];
-				$response['plan'][$count]['status'] 	= $plan['status'] == 1 ? 'Active':'Inactive';
-				$count++;
-			}
-			$response['count'] = $iFilteredTotal;
-			$response['success'] = 1;
-			$response['message'] = "";
-		}else{
-			$response['message'] = "No plan found";
-			$response['success'] = 0;
-		}
-		
-		echo json_encode($response);
-	}
-	public function subscription(){
-		$post = $this->input->post();
-		if(isset($post['user_id']) && $post['user_id'] != ""){
-			$subData = array(
-				'user_id'  =>$post['user_id'],
-				'plan_id'  =>$post['plan_id'],
-				'video_id' =>$post['video_id'],
-				'amount'   =>$post['amount'],
-				'type'     =>$post['type'],
-				 );
-
-			if(isset($post['txn_id']) && $post['txn_id'] != ""){
-				$txnData = array(
-					'user_id'        =>$post['user_id'],
-					'amount'         =>$post['amount'],
-					'transaction_id' =>$post['txn_id'],
-					'payment_mode'   =>$post['payment_mode'],
-					'currency'       =>$post['currency'],
-					'status'         =>$post['status'],
-					'timestamp'      =>time(),
-					 );
-				$results  = $this->common_model->addTransactionDetail($txnData);
-				if($post['status'] == 'success'){
-						$type = 1;
-						$mode = 'Add Money';
-						$comment = 'Point add by you.';
-						$this->common_model->walletTransaction($post['user_id'],$post['amount'],$type,$mode,$comment);
-					}
-			}
-
-			$results = $this->common_model->getSubscription($subData);
-			if($results['success'] == 1){
-				$transactionType = 2;
-				$mode = 'Purchase';
-				if(isset($post['plan_id']) && $post['plan_id'] != ""){
-					$planData   = $this->db->query('select * from plan where plan_id = '.$post['plan_id'])->row_array();
-					$comment = 'Take '.$planData['days'].' days Subscription.';
-				}else{
-					$planData   = $this->common_model->getVideoById($post['video_id'],$post['type']);
-					$comment = 'Use point for  '.$post['type'].' '.$planData['title'];
-				}
-				$this->common_model->walletTransaction($post['user_id'],$post['amount'],$transactionType,$mode,$comment);
-			}
-			if($results['success'] == 1){
-				$response['message'] = "";
-			    $response['success'] = 1;
-			}else{
-				$response['message'] = "Opps.. Something went wrong.";
-			    $response['success'] = 0;
-			}
-		}else{
-			$response['message'] = "user id can not blank.";
-			$response['success'] = 0;	
-		}
-		echo json_encode($response);
-	}
     public function clean($string) {
 	   $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
 
@@ -797,6 +645,104 @@ public function media_list(){
 		echo json_encode($response);
 
 	}
+ public function wallet_transaction(){
+		$post = $this->input->post();
+		if(isset($post['user_id']) && $post['user_id'] != ""){
+			if(isset($post['amount']) && $post['amount'] != ""){
+				if(isset($post['txn_id']) && $post['txn_id'] != ""){
+					$txnData = array(
+						'user_id'        =>$post['user_id'],
+						'amount'         =>$post['amount'],
+						'transaction_id' =>$post['txn_id'],
+						'payment_mode'   =>$post['payment_mode'],
+						'currency'       =>$post['currency'],
+						'status'         =>$post['status'],
+						'timestamp'      =>time(),
+						 );
+					$results  = $this->common_model->addTransactionDetail($txnData);
+					if($results['success'] == 1){
+						$response['message'] = "";
+					    $response['success'] = 1;
+					}else{
+						$response['message'] = "Opps.. Something went wrong.";
+					    $response['success'] = 0;
+					}
+					if($post['status'] == 'success'){
+						$type = 1;
+						$mode = 'Add Money';
+						$comment = 'Point add by you.';
+						$this->common_model->walletTransaction($post['user_id'],$post['amount'],$type,$mode,$comment);
+					}
+				}else{
+					$response['message'] = "txn_id can not blank.";
+					$response['success'] = 0;
+				}
+			}else{
+				$response['message'] = "Amount can not blank.";
+				$response['success'] = 0;
+			}
+		}else{
+				$response['message'] = "user id can not blank.";
+				$response['success'] = 0;
+
+		}
+		echo json_encode($response);
+	}
+
+	public function subscription(){
+		$post = $this->input->post();
+		if(isset($post['user_id']) && $post['user_id'] != ""){
+			$subData = array(
+				'user_id'  =>$post['user_id'] ,
+				'plan_id'  =>$post['plan_id'],
+				'video_id' =>$post['video_id'],
+				'amount'   =>$post['amount'],
+				'type'     =>$post['type'],
+				 );
+			if(isset($post['txn_id']) && $post['txn_id'] != ""){
+				$txnData = array(
+					'user_id'        =>$post['user_id'],
+					'amount'         =>$post['amount'],
+					'transaction_id' =>$post['txn_id'],
+					'payment_mode'   =>$post['payment_mode'],
+					'currency'       =>$post['currency'],
+					'status'         =>$post['status'],
+					'timestamp'      =>time(),
+					 );
+				$results  = $this->common_model->addTransactionDetail($txnData);
+				if($post['status'] == 'success'){
+						$type = 1;
+						$mode = 'Add Money';
+						$comment = 'Point add by you.';
+						$this->common_model->walletTransaction($post['user_id'],$post['amount'],$type,$mode,$comment);
+					}
+			}
+			$results = $this->common_model->getSubscription($subData);
+			if($results['success'] == 1){
+				$transactionType = 2;
+				$mode = 'Purchase';
+				if(isset($post['plan_id']) && $post['plan_id'] != ""){
+					$planData   = $this->db->query('select * from plan where plan_id = '.$post['plan_id'])->row_array();
+					$comment = 'Take '.$planData['days'].' days Subscription.';
+				}else{
+					$planData   = $this->common_model->getVideoById($post['video_id'],$post['type']);
+					$comment = 'Use point for  '.$post['type'].' '.$planData['title'];
+				}
+				$this->common_model->walletTransaction($post['user_id'],$post['amount'],$transactionType,$mode,$comment);
+			}
+			if($results['success'] == 1){
+				$response['message'] = "";
+			    $response['success'] = 1;
+			}else{
+				$response['message'] = "Opps.. Something went wrong.";
+			    $response['success'] = 0;
+			}
+		}else{
+			$response['message'] = "user id can not blank.";
+			$response['success'] = 0;	
+		}
+		echo json_encode($response);
+	}
 	public function popular_search_video(){
 		$post = $this->input->post();
 		if(isset($post['search']) && $post['search']){
@@ -826,7 +772,6 @@ public function media_list(){
 
 		}
 	}
-
 	public function insert_search_data(){
 		$post = $this->input->post();
 		if(isset($post['video_id']) && $post['video_id']){
@@ -897,8 +842,62 @@ public function media_list(){
 				$response['success'] = 0;
 			}
 		echo json_encode($response);
-	}	
+	}
+	public function plan_list(){
+		$post = $this->input->post();
+		if($post['page'] || !empty($post['page']) || $post['limit'] || !empty($post['limit'])){
+			$curpage = $post['page'];
+			$limit = $post['limit'];
+			$search  = $post['q'];
+		}else{
+			$curpage = 1;
+			$search  = $post['q'];
+			$limit = 20;
+		}
 
+		$start      = ($curpage * $limit) - $limit;
+		$plans   	= $this->db->get('plan');
+		$totlerec   = $plans->num_rows();
+		$endpage    = ceil($totlerec/$limit);
+		$startpage  = 1;
+		$nextpage   = $curpage + 1;
+		$prevpage   = $curpage - 1;
+
+		if($search == ""){
+			$DisplayLimit = " limit ".$start.",".$limit;
+		}
+
+		$cond = "";
+
+		if($search != ""){
+			$cond .= " and (name like '%".$search."%') ";
+		}
+
+		$planData = $this->db->query("select SQL_CALC_FOUND_ROWS * from plan where 1=1 ".$cond." order by price ".$DisplayLimit)->result_array();
+			$query = $this->db->query('SELECT FOUND_ROWS() as myCounter');
+			$iFilteredTotal = $query->row()->myCounter;
+
+		$count = 0;
+		if(!empty($planData)){
+			foreach($planData as $plan){
+
+				$response['plan'][$count]['plan_id']    = $plan['plan_id'];
+				$response['plan'][$count]['name'] 		= $plan['name'];
+				$response['plan'][$count]['price'] 		= $plan['price'];
+				$response['plan'][$count]['days'] 		= $plan['days'];
+				$response['plan'][$count]['status'] 	= $plan['status'] == 1 ? 'Active':'Inactive';
+				$count++;
+			}
+			$response['count'] = $iFilteredTotal;
+			$response['success'] = 1;
+			$response['message'] = "";
+		}else{
+			$response['message'] = "No plan found";
+			$response['success'] = 0;
+		}
+		
+		echo json_encode($response);
+	}
 	public function wallet_history(){
 		$post = $this->input->post();
 		if(isset($post['user_id']) && $post['user_id']){
@@ -940,5 +939,107 @@ public function media_list(){
 		}
 		echo json_encode($response);
 	}
+public function pages($pageName){
+	$action = array('contact_us','about_us','privacy_policy','terms_condition');
+	if(in_array($pageName, $action)){
+		if($pageName == 'contact_us'){
+			$post = $this->input->post();
+			if(isset($post['name']) && $post['name'] !=''){
+				if(isset($post['email']) && $post['email'] !=''){
+					if(isset($post['phone']) && $post['phone'] !=''){
+						if(isset($post['message']) && $post['message'] !=''){
+							    $insertData  = array(
+						            'name'      =>$post['name'],
+						            'email'     =>$post['email'],
+						            'phone'     =>$post['phone'],
+						            'message'   =>$post['message'],
+						         );
+							$result = $this->common_model->insertInquiry($insertData);
+							if($result['success'] == 1){
+							$sendInquiry = $this->email_model->send_inquiry_email($insertData);
+								if($sendInquiry){
+									$response['message'] = "your inquiry has been submited.";
+									$response['success'] = 1;
+								}else{
+									$response['message'] = "Something went wrong!";
+									$response['success'] = 0;
+								}
+							}else{
+								$response['message'] = "Something went wrong!";
+								$response['success'] = 0;
+							}
+						}else{
+							$response['message'] = "Message con not be blank.";
+							$response['success'] = 0;
+						}
+					}else{
+						$response['message'] = "Phone con not be blank.";
+						$response['success'] = 0;
+					}
+				}else{
+					$response['message'] = "Email con not be blank.";
+					$response['success'] = 0;
+				}
+			}else{
+				$response['message'] = "Name con not be blank.";
+				$response['success'] = 0;
+			}
+		}
+		if($pageName == 'about_us'){
+			$pageData = $this->db->get_where('pages',array("page_slug"=>'about_us'))->row_array();
+			if(!empty($pageData)){
+				$response['pageData']['pagename'] = $pageData['page_name'];
+				$response['pageData']['pageLongText'] = $pageData['page_date'];
+				$response['message'] = "";
+				$response['success'] = 1;
+
+			}else{
+				$response['message'] = "no data found!";
+				$response['success'] = 0;
+			}
+		}
+		if($pageName == 'privacy_policy'){
+			$pageData = $this->db->get_where('pages',array("page_slug"=>'privacy_policy'))->row_array();
+			if(!empty($pageData)){
+				$response['pageData']['pagename'] = $pageData['page_name'];
+				$response['pageData']['pageLongText'] = $pageData['page_date'];
+				$response['message'] = "";
+				$response['success'] = 1;
+
+			}else{
+				$response['message'] = "no data found!";
+				$response['success'] = 0;
+			}
+		}
+		if($pageName == 'terms_condition'){
+			$pageData = $this->db->get_where('pages',array("page_slug"=>'terms_condition'))->row_array();
+			if(!empty($pageData)){
+				$response['pageData']['pagename'] = $pageData['page_name'];
+				$response['pageData']['pageLongText'] = $pageData['page_date'];
+				$response['message'] = "";
+				$response['success'] = 1;
+
+			}else{
+				$response['message'] = "no data found!";
+				$response['success'] = 0;
+			}
+		}
+
+	}else{
+		$response['message'] = "invalid action.";
+		$response['success'] = 0;	
+	}
+echo json_encode($response);
+}
+public function testPush(){
+	$id = 15;
+	$message = 'new movie added.';
+	$opration = 'Movie Add.';
+	echo $opration; die;
+	$result = $this->common_model->push_notification($id,$message,$opration);
+	echo json_encode($result);
+}
+
+
 
 }

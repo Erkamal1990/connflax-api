@@ -163,16 +163,16 @@ class Browse extends CI_Controller {
 	//Save movie progress
 	function movie_progress($param1 = '', $param2 = '', $param3 = '', $param4 = ''){
 
-		$progreses = $this->db->get_where('progress', array('user_id' => $param1, 'video_id' => $param2, 'active_user' => $param4));
+		$progreses = $this->db->get_where('progress', array('user_id' => $param1, 'movie_id' => $param2, 'active_user' => $param4));
 		if($progreses->num_rows() > 0){
 			$data['progress_value'] = $param3;
 			$this->db->where('user_id', $param1);
-			$this->db->where('video_id', $param2);
+			$this->db->where('movie_id', $param2);
 			$this->db->where('active_user', $param4);
 			$this->db->update('progress', $data);
 		}else{
 			$data['user_id'] = $param1;
-			$data['video_id'] = $param2;
+			$data['movie_id'] = $param2;
 			$data['progress_value'] = $param3;
 			$data['active_user'] = $param4;
 			$this->db->insert('progress', $data);
@@ -206,11 +206,11 @@ class Browse extends CI_Controller {
 		$this->load->view('frontend/index', $page_data);
 	}
 
-	function playmovie($video_id = '')
+	function playmovie($movie_id = '')
 	{
 		$page_data['page_name']		=	'playmovie';
 		$page_data['page_title']	=	'Watch Movie';
-		$page_data['video_id']		=	$video_id;
+		$page_data['movie_id']		=	$movie_id;
 		$this->load->view('frontend/index', $page_data);
 	}
 

@@ -314,7 +314,7 @@ class Email_model extends CI_Model {
          $content = '';
          $content .= '<div style="text-align: center;">';
          $content .= '<a href="'.FRONT_URL.'">';
-         $content .= '<img style="width:250px;" src="'.SYSTEM_LOGO_EMAIL.'">';
+         $content .= '<img style="width:200px;" src="'.SYSTEM_LOGO_EMAIL.'">';
          $content .= '</a>';
          $content .= '<h2 style="font-size: 24px;">Hello User, </h2>';
          $content .= '<p style="color: #999; font-size: 18px;">Your password resat request has been successfully proceed.  Please use below password to login account.</p>';
@@ -329,6 +329,26 @@ class Email_model extends CI_Model {
          $this->do_email($htmlTemplate, $subject, $to, $from);
          
          return true;  
+   }
+    public function send_inquiry_email($user){
+      
+      $content = '';
+      $content .= '<div style="text-align:center; padding:25px 0">';
+      $content .= '<a href="'.FRONT_URL.'">';
+      $content .= '<img style="width:250px;" src="'.SYSTEM_LOGO_EMAIL.'">';
+      $content .= '</a>';
+      $content .= '<h2 style="font-size: 24px;">Welcome '.$user['name'].'</h2>';
+      $content .= '<p style="color: #999; font-size: 18px;">Thank You for sending your valuable message to us, We will revert you shortly. </p>';
+      $content .= '</div>   ';
+
+      $htmlTemplate = $this->master_template($content);
+
+      $subject = SYSTEM_NAME." inquiry";
+      $to      = $user['email'];
+      $from    = SYSTEM_EMAIL;
+      $fromName    = SYSTEM_NAME;
+
+      $this->do_email_func($from,$fromName,$to,$subject,$htmlTemplate);
    }
 
    function do_email($msg = NULL, $sub = NULL, $to = NULL, $from = NULL, $attachments = NULL){
@@ -367,5 +387,23 @@ class Email_model extends CI_Model {
          return 0;
       }
    }
+
+   public function do_email_func($from = '', $from_name = '', $to = '', $sub ='', $msg ='')
+    {   
+        $this->load->library('email');
+        $this->email->set_newline("\r\n");
+        $this->email->from($from, $from_name);
+        $this->email->to($to);        
+        $this->email->subject($sub);
+        $this->email->message($msg);
+        
+        if($this->email->send()){
+            return 1;
+        }else{
+            //echo $this->email->print_debugger();
+            return 0;
+        }
+        //echo $this->email->print_debugger();
+    }
 
 }

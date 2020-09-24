@@ -20,10 +20,10 @@ class Home extends CI_Controller {
 	public function index()
 	{
 		$this->login_check();
-		redirect(base_url().'index.php?home/signin/admin' , 'refresh');
-		/*$page_data['page_name']		=	'landing';
+		//redirect(base_url().'index.php?home/signin/admin' , 'refresh');
+		$page_data['page_name']		=	'landing';
 		$page_data['page_title']	=	'Welcome';
-		$this->load->view('frontend/index', $page_data);*/
+		$this->load->view('frontend/index', $page_data);
 	}
 
 	function signup()
@@ -84,7 +84,7 @@ class Home extends CI_Controller {
 		}else {
 			$page_data['page_name']		=	'signin';
 			$page_data['page_title']	=	'Sign in';
-			//$this->load->view('frontend/index', $page_data);
+			$this->load->view('frontend/index', $page_data);
 		}
 	}
 
